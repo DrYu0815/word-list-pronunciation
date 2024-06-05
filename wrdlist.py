@@ -12,16 +12,17 @@ api_url = 'https://api.dictionaryapi.dev/api/v2/entries/en/'
 wb = openpyxl.load_workbook(excel_path)
 sheet = wb.active
 
-# 准备进度条
-pbar = tqdm(total=sheet.max_row)
-
-# 从上次中断的地方开始
-start_row = 1
+# 检测D列注释到的最后一行
+last_annotated_row = 1
 for i in range(1, sheet.max_row + 1):
-    if sheet.cell(row=i, column=4).value is None:
-        start_row = i
-        break
-pbar.update(start_row - 1)
+    if sheet.cell(row=i, column=4).value is not None:
+        last_annotated_row = i
+start_row = last_annotated_row + 1  # 从下一行开始注释
+
+print(f"上次注释的最后一行是第{last_annotated_row}行。")
+
+# 准备进度条
+pbar = tqdm(total=sheet.max_row - start_row + 1)
 
 # 批量获取发音并写入Excel
 try:
@@ -65,6 +66,6 @@ finally:
     wb.save(excel_path)
     pbar.close()
     completed = pbar.n
-    print(f"已完成{completed}个单词的发音注释，总共{sheet.max_row}个。预计剩余时间：{((sheet.max_row - completed) * 1) / 60}分钟。")
+    print(f"已完成{completed}个单词的发音注释，总共{sheet.max_row}个。这次注释到了第{last_annotated_row + completed}行，总共注释了{completed}个单词。预计剩余时间：{((sheet.max_row - last_annotated_row - completed) * 1) / 60}分钟。")
 
 # 运行脚本后，如果中断再次运行会从上次中断的地方继续
